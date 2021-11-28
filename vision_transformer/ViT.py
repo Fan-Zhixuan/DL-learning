@@ -2,6 +2,8 @@ import copy
 import paddle
 import paddle.nn as nn
 
+paddle.set_device('CPU')
+
 class Identity(nn.Layer):
     def __init__(self):
         super().__init__()
@@ -50,15 +52,20 @@ class PatchEmbedding(nn.Layer):
             default_initializer=nn.initializer.Constant(0.))
 
     def forward(self, x):
-        # [n, c, h, w]
-        # TODO: forward
+        ### x:[n, c, h, w]
         class_tokens = self.class_token.expand([x.shape[0],-1,-1])
+        ### class_tokens:[n,1,embed_dim]
         x = self.patch_embedding(x)
+        ### x:[n,embed_dim,h',w'](h'*w'=num_patches)
         x = x.flatten(2)
+        ### x:[n,embed_dim,h'*w'(num_patches)]
         x = x.transpose([0,2,1])
+        ### x:[n,h'*w'(num_patches),embed_dim]
         x = paddle.concat([class_tokens,x],axis=1)
+        ### x:[n,num_patches+1,embed_dim]
+        ### self.position_embedding:[1,num_patches+1,embed_dim]
         x = x+self.position_embedding
-
+        ### x:[n,num_patches+1,embed_dim]
         return x 
 
 class Attention(nn.Layer):
@@ -80,14 +87,14 @@ class Attention(nn.Layer):
         self.softmax = nn.Softmax(axis=-1)
 
     def transpose_multihead(self, x):
-        # x: [N, num_patches, all_head_dim] -> [N, n_heads, num_patches, head_dim]
+        # x: [N, num_patches, all_head_dim(emben_dim)] -> [N, n_heads, num_patches, head_dim]
         new_shape = x.shape[:-1] + [self.num_heads, self.head_dim]
         x = x.reshape(new_shape)
         x = x.transpose([0, 2, 1, 3])
         return x
 
     def forward(self, x):
-        # TODO
+        ### x:[n,num_patches,embed_dim]
         B,N,_ = x.shape
         ###B:batch_size,N:num_patches
         qkv = self.qkv(x).chunk(3,-1)
@@ -99,8 +106,12 @@ class Attention(nn.Layer):
         attn = self.softmax(attn)
         ###attn:[B,num_heads,num_patches,num_patches]每个patch对其他所有patch的注意力值，所以一定是一个方阵
         out = paddle.matmul(attn,v)
+        ###out:[B,num_heads,num_patches,head_dim]
         out = out.transpose([0,2,1,3])
+        ###out:[B,num_patches,num_heads,head_dim]
         out = out.reshape([B,N,-1])
+        ###out:[n,num_patches,num_heads*head_dim=embed_dim]
+        ###经过Attention层，tensor的尺寸不发生变化
         return out
 
 
@@ -115,16 +126,18 @@ class EncoderLayer(nn.Layer):
         self.mlp = Mlp(embed_dim, mlp_ratio)
 
     def forward(self, x):
-        # TODO
+        ### x:[n,num_patches+1,embed_dim]
         h = x 
         x = self.attn_norm(x)
+        ### x:[n,num_patches+1,embed_dim]
         x = self.attn(x)
+        ### x:[n,num_patches+1,embed_dim]
         x = x + h
-
         h = x
         x = self.mlp_norm(x)
         x = self.mlp(x)
         x = x + h
+        ### x:[n,num_patches+1,embed_dim]
         return x
 
 class Encoder(nn.Layer):
@@ -138,10 +151,11 @@ class Encoder(nn.Layer):
         self.norm = nn.LayerNorm(embed_dim)
 
     def forward(self, x):
-        # TODO
+        ### x:[n,num_patches+1,embed_dim]
         for layer in self.layers:
             x = layer(x)
         x = self.norm(x)
+        ### x:[n,num_patches+1,embed_dim]
         return x
         
 
@@ -166,17 +180,21 @@ class VisualTransformer(nn.Layer):
         self.classifier = nn.Linear(embed_dim, num_classes)
 
     def forward(self, x):
-        # TODO: forward
+        ### x:[n,c,h,w]
         x = self.patch_embedding(x)
+        ### x:[n,num_patches+1,embed_dim]
+        ### 后统一将num_pathces+1改写为num_pathces
         x = self.encoder(x)
+        ### x:[n,num_patches+1,embed_dim]
         x = self.classifier(x)
         return x 
 
 def main():
     vit = VisualTransformer()
-    print(vit)
-    paddle.summary(vit, (4, 3, 224, 224)) # must be tuple
-
+    # print(vit)
+    # paddle.summary(vit, (4, 3, 224, 224)) # must be tuple
+    t = paddle.randn([4, 3, 224,224])
+    out = vit(t)
 
 if __name__ == "__main__":
     main()
