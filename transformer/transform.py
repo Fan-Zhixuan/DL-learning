@@ -41,7 +41,6 @@ class RandomVerticalFlip:
 
     def __call__(self, im, label=None):
         if random.random() < self.prob:
-            print(1)
             im = functional.vertical_flip(im)
             if label is not None:
                 label = functional.vertical_flip(label)
