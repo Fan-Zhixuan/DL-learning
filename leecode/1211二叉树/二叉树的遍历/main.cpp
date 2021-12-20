@@ -14,7 +14,7 @@ struct TreeNode {
 	TreeNode(int x, TreeNode* left, TreeNode* right) : val(x), left(left), right(right) {}
 };
 
-class PreorderTraversalTree {
+class PreorderTraversalTree {//前序遍历
 public:
 	vector<int> preorderTraversal(TreeNode* root) {
 		vector<int> res;
@@ -51,7 +51,7 @@ public:
 };
 
 
-class InorderTraversalTree {
+class InorderTraversalTree {//中序遍历
 public:
 	vector<int> inorderTraversal(TreeNode* root) {
 		vector<int> res;
@@ -88,7 +88,7 @@ public:
 };
 
 
-class PostorderTraversalTree {
+class PostorderTraversalTree {//后序遍历
 public:
 	vector<int> postorderTraversal(TreeNode* root) {
 		vector<int> res;
