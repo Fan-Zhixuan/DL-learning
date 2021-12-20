@@ -139,7 +139,14 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="insertionSortList.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="mergeTwoLists.cpp" />
+    <ClCompile Include="sortlist.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="fun.h" />
+    <ClInclude Include="ListNode.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
